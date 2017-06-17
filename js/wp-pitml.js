@@ -1,4 +1,4 @@
-// Based on jquery.paste_image_reader.js
+//jquery.paste_image_reader.js for handling the clipboard paste
 (function($) {
   var defaults;
   $.event.fix = (function(originalFix) {
@@ -54,6 +54,8 @@
   };
 })(jQuery);
 
+//Uploading logic for WP
+//Mimics the original upload process (plupload)
 (function($) {
   $("html").pasteImageReader(function(results) {
     var fileObj = results.file;
@@ -64,15 +66,45 @@
     FD.append("action", "upload-attachment");
     FD.append("_wpnonce", _wpPluploadSettings.defaults.multipart_params._wpnonce);
     FD.append("async-upload", fileObj);
-    // Define what happens on successful data submission
-    XHR.addEventListener('load', function(event) {
-      //TODO Add new attachment to backbone view
-    });
+    //Upload success response handling
+    XHR.onreadystatechange = function() {
+      if (XHR.readyState === 4) {
+        // Generate attributes for a new `Attachment` model.
+        var result = JSON.parse(XHR.response)
+        var file = result.data;
+        var attributes = _.extend({
+          uploading: false,
+          date:      new Date(),
+          filename:  file.name,
+          menuOrder: 0,
+          uploadedTo: wp.media.model.settings.post.id,
+        }, _.pick( file, 'loaded', 'size', 'percent' ) );
+        //Is there a smarter way to do this without ES6 Object.assign()?
+        for (var prop in file) {
+            if (file.hasOwnProperty(prop)) {
+                attributes[prop] = file[prop];
+            }
+        }
+        // Handle early mime type scanning for images.
+        var image = /(?:jpe?g|png|gif)$/i.exec( file.name );
+        // For images set the model's type and subtype attributes.
+        if ( image ) {
+          attributes.type = 'image';
+          // `jpeg`, `png` and `gif` are valid subtypes.
+          // `jpg` is not, so map it to `jpeg`.
+          attributes.subtype = ( 'jpg' === image[0] ) ? 'jpeg' : image[0];
+        }
+        // Create a model for the attachment and add it to queue in order for it to show in the backbone collection
+        file.attachment = wp.media.model.Attachment.create( attributes );
+        wp.Uploader.queue.add(file.attachment);
+      }
+    }
     // Define what happens in case of error
     XHR.addEventListener('error', function(event) {
+      //TODO Error handling
     });
     // Set up our request
-    XHR.open('POST', '/wp-admin/async-upload.php');
+    XHR.open('POST', _wpPluploadSettings.defaults.url);
     // Send our FormData object (form submission)
     XHR.send(FD);
   });

@@ -1,10 +1,11 @@
 <?php
 /*
 Plugin Name: Paste Images to Media Library
-Plugin URI: http://rautanen.info
-Description: Paste images from your cliboard to Media Library.
+Plugin URI: https://github.com/jukra/wp-pitml
+Description: Paste images from your cliboard directly to Media Library on the upload page.
 Author: Jukka Rautanen
-Version: 0.0.1
+Version: 0.0.2
+License: GPLv2 or later
 Author URI: http:/rautanen.info
 */
 
@@ -22,7 +23,7 @@ class PasteImagesToMediaLibrary {
 	    if ( 'upload.php' != $hook ) {
 	        return;
 	    }
-	    wp_enqueue_script( 'paste-images',  plugin_dir_url( __FILE__ ) . 'js/paste-images.js' );
+	    wp_enqueue_script( 'paste-images',  plugin_dir_url( __FILE__ ) . 'js/wp-pitml.js' );
 	}
 }
 new PasteImagesToMediaLibrary;
